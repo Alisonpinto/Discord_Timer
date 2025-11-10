@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FocusFlow</title>
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kdam+Thmor+Pro&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      background-color: #23272A;
+      color: #DCDDDE;
+      font-family: 'Segoe UI', sans-serif;
+      /* Changed for responsiveness */
+      overflow-y: auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 2rem 0; /* Added padding for spacing on scroll */
+    }
+    .accent { background-color: #5865F2; }
+    .accent:hover { background-color: #4752C4; }
+    .glass {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .glow { text-shadow: 0 0 20px rgba(88, 101, 242, 0.8); }
+
+    .mode-btn {
+      color: #B9BBBE;
+      transition: all 0.2s;
+    }
+    
+    .mode-btn.active {
+      color: white;
+    }
+
+    /* This animation is for the timer buttons */
+    .mode-btn.active.px-4 {
+      background-color: #5865F2;
+      color: white;
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 0 5px rgba(88, 101, 242, 0.4);
+        border-color: #5865F2;
+      }
+      50% {
+        box-shadow: 0 0 15px rgba(88, 101, 242, 0.9);
+        border-color: #7983F5;
+      }
+    }
+
+    /* Timer Flip Animation */
+    #timer {
+      font-size: 100px;
+      font-weight: bold;
+      color: white;
+      display: flex;
+      justify-content: center;
+      gap: 0.2em;
+      user-select: none;
+    }
+    .digit {
+      position: relative;
+      width: 70px;
+      height: 100px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+      perspective: 300px;
+      /* FIX: Added padding-top to nudge numbers into visual center */
+      padding-top: 8px; 
+    }
+    .flip {
+      animation: flipOnce 0.4s ease-in-out forwards;
+    }
+    @keyframes flipOnce {
+      0% { transform: rotateX(0deg); }
+      50% { transform: rotateX(-90deg); opacity: 0.4; }
+      100% { transform: rotateX(0deg); opacity: 1; }
+    }
+
+    /* Responsive adjustments for mobile */
+    @media (max-width: 768px) {
+      #timer {
+        font-size: 60px;
+      }
+      .digit {
+        width: 45px;
+        height: 60px;
+        font-size: 50px;
+      }
+    }
+
+    /* Reward Popup */
+    #rewardPopup {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #5865F2;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(88,101,242,0.8);
+      display: none;
+      animation: slideIn 0.5s ease forwards;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .font-brand {
+      font-family: 'Kdam Thmor Pro', sans-serif;
+    }
+    
+    .icon-wrapper {
+      width: 56px; /* w-14 */
+      height: 56px; /* h-14 */
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid #3a3f42;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    
+    .mode-btn.active .icon-wrapper {
+      background-color: #5865F2;
+      border-color: #7983F5;
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+    
+  </style>
+</head>
+<body>
+
+  <div class="absolute top-4 left-4 md:top-8 md:left-8">
+    <h1 class="font-brand text-4xl font-bold text-white glow">
+      Focus<span class="text-[#5865F2]">Flow</span>
+    </h1>
+  </div>
+  
+  <div class="text-center">
+    <div id="welcomeBox" class="hidden">
+      <h1 class="text-3xl font-bold glow">Welcome, <span id="usernameDisplay"></span></h1>
+      <button id="changeName" class="text-xs text-[#A5A6A8] underline hover:text-[#5865F2]">Change name</button>
+    </div>
+    <div id="nameInputBox" class="flex flex-col items-center space-y-2">
+      <input id="nameInput" type="text" placeholder="Enter your name..."
+        class="bg-[#2C2F33] text-white placeholder-[#7A7C80] rounded-lg px-4 py-1 focus:outline-none border border-gray-700 w-48 text-center text-sm" />
+      <button id="saveName" class="accent px-4 py-1 rounded-lg font-semibold text-white text-sm">Save</button>
+    </div>
+  </div>
+
+  <div class="glass w-[90vw] max-w-5xl py-4 px-6 rounded-xl flex flex-col items-center shadow-lg relative mt-16 md:mt-0">
+    <button id="openSettings" class="absolute top-3 right-4 text-[#B9BBBE] hover:text-white transition">
+      <i class="fas fa-cog text-lg"></i>
+    </button>
+    
+    <div class="flex gap-2 mb-3">
+      <button id="pomodoroMode" class="mode-btn active px-4 py-1 rounded-lg font-semibold text-sm border border-[#5865F2]">Pomodoro</button>
+      <button id="shortBreakMode" class="mode-btn px-4 py-1 rounded-lg font-semibold text-sm border border-gray-700">Short Break</button>
+      <button id="longBreakMode" class="mode-btn px-4 py-1 rounded-lg font-semibold text-sm border border-gray-700">Long Break</button>
+    </div>
+    
+    <div id="timer" class="">
+      <div class="digit hidden glow" id="minHundreds">0</div> 
+      <div class="digit glow" id="minTens">2</div>
+      <div class="digit glow" id="minOnes">5</div>
+      <div class="digit glow">:</div>
+      <div class="digit glow" id="secTens">0</div>
+      <div class="digit glow" id="secOnes">0</div>
+    </div>
+    
+    <div class="flex gap-3 mt-3">
+      <button id="startStopBtn" class="accent px-10 py-2 rounded-lg font-semibold text-white text-lg">START</button>
+      <button id="resetBtn" class="px-6 py-2 rounded-lg border border-gray-700 text-[#B9BBBE] font-semibold text-sm hover:bg-[#2C2F33] flex items-center justify-center">
+        <i class="fas fa-redo"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="flex flex-col md:flex-row justify-center items-start gap-8 w-[90vw] max-w-5xl">
+
+    <div class="glass p-4 md:p-6 rounded-xl shadow-lg h-[35vh] w-full md:w-1/2 flex flex-col">
+      <h2 class="text-lg font-semibold mb-2 text-[#B9BBBE] text-center">To-Do List</h2>
+      <div class="flex mb-2 shrink-0">
+        <input id="todoInput" type="text" placeholder="Task..."
+          class="flex-1 bg-[#2C2F33] text-white placeholder-[#7A7C80] rounded-l-lg px-2 py-1 focus:outline-none border border-gray-700 text-sm" />
+        <button id="addTodo" class="accent px-3 py-1 rounded-r-lg font-semibold text-white text-sm">Add</button>
+      </div>
+      <ul id="todoList" class="space-y-1 text-[#DCDDDE] text-sm overflow-y-auto flex-1"></ul>
+    </div>
+
+    <div class="glass p-4 md:p-6 rounded-xl shadow-lg h-[35vh] w-full md:w-1/2 flex flex-col">
+      <h2 class="text-lg font-semibold mb-2 text-[#B9BBBE] text-center">Ambient Sounds</h2>
+      
+      <div class="flex flex-1 items-center justify-around">
+        
+        <div id="rainBtn" class="mode-btn rounded-lg flex flex-col items-center justify-center cursor-pointer">
+          <div class="icon-wrapper">
+            <i class="fas fa-cloud-rain text-xl"></i>
+          </div>
+        </div>
+        <div id="fireBtn" class="mode-btn rounded-lg flex flex-col items-center justify-center cursor-pointer">
+          <div class="icon-wrapper">
+            <i class="fas fa-fire text-xl"></i>
+          </div>
+        </div>
+        <div id="forestBtn" class="mode-btn rounded-lg flex flex-col items-center justify-center cursor-pointer">
+          <div class="icon-wrapper">
+            <i class="fas fa-tree text-xl"></i>
+          </div>
+        </div>
+        <div id="cafeBtn" class="mode-btn rounded-lg flex flex-col items-center justify-center cursor-pointer">
+          <div class="icon-wrapper">
+            <i class="fas fa-coffee text-xl"></i>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="text-[#8E9297] text-xs text-center mt-2">Made with 💜 by Alison Pinto & Jawaan</footer>
+
+  <div id="rewardPopup"></div>
+
+  <div id="settingsModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+    <div class="glass bg-[#2C2F33] p-6 rounded-xl w-80 shadow-2xl flex flex-col">
+      <h2 class="text-lg font-semibold mb-4 text-white">Timer Settings</h2>
+
+      <label class="text-sm text-[#B9BBBE]">Pomodoro (minutes)</label>
+      <input id="pomodoroTime" type="number" class="bg-[#3a3f42] text-white rounded p-2 mb-3 focus:outline-none" value="25">
+
+      <label class="text-sm text-[#B9BBBE]">Short Break (minutes)</label>
+      <input id="shortBreakTime" type="number" class="bg-[#3a3f42] text-white rounded p-2 mb-3 focus:outline-none" value="5">
+
+      <label class="text-sm text-[#B9BBBE]">Long Break (minutes)</label>
+      <input id="longBreakTime" type="number" class="bg-[#3a3f42] text-white rounded p-2 mb-3 focus:outline-none" value="15">
+
+      <div class="flex gap-2 mt-2">
+        <button id="saveSettings" class="accent flex-1 px-4 py-2 rounded-lg font-semibold text-white text-sm">Save</button>
+        <button id="closeSettings" class="flex-1 px-4 py-2 rounded-lg border border-gray-700 text-[#B9BBBE] font-semibold text-sm hover:bg-[#3a3f42]">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="rainSound" src="audio/rain.wav" loop></audio>
+  <audio id="fireSound" src="audio/fire.wav" loop></audio>
+  <audio id="forestSound" src="audio/forest.wav" loop></audio>
+  <audio id="cafeSound" src="audio/cafe.mp3" loop></audio>
+
+  <audio id="alarmSound" src="https://assets.mixkit.co/sfx/preview/mixkit-typewriter-soft-keys-1110.mp3" preload="auto"></audio>
+
+  <script>
+    // === USER NAME ===
+    const welcomeBox = document.getElementById("welcomeBox");
+    const nameInputBox = document.getElementById("nameInputBox");
+    const nameInput = document.getElementById("nameInput");
+    const usernameDisplay = document.getElementById("usernameDisplay");
+    const saveName = document.getElementById("saveName");
+    const changeName = document.getElementById("changeName");
+    let username = localStorage.getItem("username");
+
+    function showWelcome() {
+      if (username) {
+        usernameDisplay.textContent = username;
+        welcomeBox.classList.remove("hidden");
+        nameInputBox.classList.add("hidden");
+      } else {
+        welcomeBox.classList.add("hidden");
+        nameInputBox.classList.remove("hidden");
+      }
+    }
+    saveName.addEventListener("click", () => {
+      const val = nameInput.value.trim();
+      if (!val) return;
+      username = val;
+      localStorage.setItem("username", username);
+      showWelcome();
+    });
+    changeName.addEventListener("click", () => {
+      localStorage.removeItem("username");
+      username = null;
+      showWelcome();
+    });
+    showWelcome();
+
+    // === TIMER ===
+    const startStopBtn = document.getElementById("startStopBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const pomodoroMode = document.getElementById("pomodoroMode");
+    const shortBreakMode = document.getElementById("shortBreakMode");
+    const longBreakMode = document.getElementById("longBreakMode");
+    const modeButtons = [pomodoroMode, shortBreakMode, longBreakMode];
+    const alarmSound = document.getElementById("alarmSound");
+
+    const digits = {
+      minHundreds: document.getElementById("minHundreds"),
+      minTens: document.getElementById("minTens"),
+      minOnes: document.getElementById("minOnes"),
+      secTens: document.getElementById("secTens"),
+      secOnes: document.getElementById("secOnes"),
+    };
+
+    const pomodoroInput = document.getElementById("pomodoroTime");
+    const shortInput = document.getElementById("shortBreakTime");
+    const longInput = document.getElementById("longBreakTime");
+    const openSettings = document.getElementById("openSettings");
+    const closeSettings = document.getElementById("closeSettings");
+    const saveSettings = document.getElementById("saveSettings");
+    const settingsModal = document.getElementById("settingsModal");
+
+    let timerInterval = null;
+    let currentMode = "pomodoro";
+    let timerSettings = {
+      pomodoro: Number(localStorage.getItem("pomodoroTime")) || 25 * 60,
+      shortBreak: Number(localStorage.getItem("shortBreakTime")) || 5 * 60,
+      longBreak: Number(localStorage.getItem("longBreakTime")) || 15 * 60,
+    };
+    let timeLeft = timerSettings.pomodoro;
+    let isRunning = false;
+    let totalFocusSeconds = parseInt(localStorage.getItem("focusSeconds") || "0");
+
+    function formatDigits(seconds) {
+      const m = String(Math.floor(seconds / 60)).padStart(3, "0");
+      const s = String(seconds % 60).padStart(2, "0");
+      return [...m + s];
+    }
+
+    function updateDisplay() {
+      const [mH, mT, mO, sT, sO] = formatDigits(timeLeft);
+      const newVals = { minHundreds: mH, minTens: mT, minOnes: mO, secTens: sT, secOnes: sO };
+
+      if (mH === '0') {
+        digits.minHundreds.classList.add('hidden');
+      } else {
+        digits.minHundreds.classList.remove('hidden');
+      }
+
+      for (const key in digits) {
+        if (digits[key].textContent !== newVals[key]) {
+          digits[key].textContent = newVals[key];
+          digits[key].classList.remove("flip");
+          void digits[key].offsetWidth;
+          digits[key].classList.add("flip");
+        }
+      }
+    }
+
+    function stopTimer(completed = false) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      isRunning = false;
+      startStopBtn.textContent = "START";
+      if (currentMode === "pomodoro" || completed) {
+         localStorage.setItem("focusSeconds", totalFocusSeconds);
+      }
+    }
+
+    function startTimer() {
+      isRunning = true;
+      startStopBtn.textContent = "PAUSE";
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+        if (currentMode === "pomodoro") {
+          totalFocusSeconds++;
+          checkRewards();
+        }
+        if (timeLeft <= 0) {
+          stopTimer(true);
+          alarmSound.play();
+          switchMode(currentMode === "pomodoro" ? "shortBreak" : "pomodoro");
+        }
+      }, 1000);
+    }
+
+    function switchMode(mode) {
+      stopTimer();
+      currentMode = mode;
+      timeLeft = timerSettings[mode];
+      // This will only apply 'active' to the top 3 buttons, not the sound buttons
+      modeButtons.forEach(btn => btn.classList.toggle("active", btn.id.includes(mode)));
+      updateDisplay();
+    }
+
+    // Settings Modal Logic
+    openSettings.addEventListener("click", () => {
+      pomodoroInput.value = timerSettings.pomodoro / 60;
+      shortInput.value = timerSettings.shortBreak / 60;
+      longInput.value = timerSettings.longBreak / 60;
+      settingsModal.classList.remove("hidden");
+    });
+    closeSettings.addEventListener("click", () => settingsModal.classList.add("hidden"));
+    saveSettings.addEventListener("click", () => {
+      timerSettings.pomodoro = Number(pomodoroInput.value) * 60;
+      timerSettings.shortBreak = Number(shortInput.value) * 60;
+      timerSettings.longBreak = Number(longInput.value) * 60;
+
+      localStorage.setItem("pomodoroTime", timerSettings.pomodoro);
+      localStorage.setItem("shortBreakTime", timerSettings.shortBreak);
+      localStorage.setItem("longBreakTime", timerSettings.longBreak);
+
+      if (!isRunning) {
+        timeLeft = timerSettings[currentMode];
+        updateDisplay();
+      }
+      settingsModal.classList.add("hidden");
+    });
+
+    startStopBtn.addEventListener("click", () => (isRunning ? stopTimer() : startTimer()));
+    resetBtn.addEventListener("click", () => { 
+      stopTimer(); 
+      timeLeft = timerSettings[currentMode]; 
+      updateDisplay(); 
+    });
+    pomodoroMode.addEventListener("click", () => switchMode("pomodoro"));
+    shortBreakMode.addEventListener("click", () => switchMode("shortBreak"));
+    longBreakMode.addEventListener("click", () => switchMode("longBreak"));
+    updateDisplay();
+
+    // === REWARD SYSTEM (UPGRADED) ===
+    const rewardPopup = document.getElementById("rewardPopup");
+    const rewardMilestones = [
+        { id: 1, seconds: 3600, label: "1 hour" },
+        { id: 2, seconds: 7200, label: "2 hours" },
+        { id: 3, seconds: 10800, label: "3 hours" },
+        { id: 4, seconds: 18000, label: "5 hours" },
+        { id: 5, seconds: 36000, label: "10 hours" }
+    ];
+    let achievedRewards = JSON.parse(localStorage.getItem("achievedRewards") || "[]");
+
+    function checkRewards() {
+      for (const milestone of rewardMilestones) {
+        if (totalFocusSeconds >= milestone.seconds && !achievedRewards.includes(milestone.id)) {
+          showRewardPopup(`🎉 Congrats ${username || "User"}! You focused for ${milestone.label}!`);
+          achievedRewards.push(milestone.id);
+localStorage.setItem("achievedRewards", JSON.stringify(achievedRewards));
+        }
+      }
+    }
+    
+    function showRewardPopup(msg) {
+      rewardPopup.textContent = msg;
+      rewardPopup.style.display = "block";
+      setTimeout(() => { rewardPopup.style.display = "none"; }, 4000);
+    }
+
+    // === AMBIENT SOUNDS SCRIPT ===
+    const sounds = {
+        rain: {
+            btn: document.getElementById('rainBtn'),
+            audio: document.getElementById('rainSound')
+        },
+        fire: {
+            btn: document.getElementById('fireBtn'),
+            audio: document.getElementById('fireSound')
+        },
+        forest: {
+            btn: document.getElementById('forestBtn'),
+            audio: document.getElementById('forestSound')
+        },
+        cafe: {
+            btn: document.getElementById('cafeBtn'),
+            audio: document.getElementById('cafeSound')
+        }
+    };
+
+    function toggleSound(sound) {
+        // Stop all other sounds
+        for (const key in sounds) {
+            if (sounds[key] !== sound) {
+                sounds[key].audio.pause();
+                sounds[key].btn.classList.remove('active');
+            }
+        }
+        
+        // Toggle the clicked sound
+        if (sound.audio.paused) {
+            sound.audio.play();
+            sound.btn.classList.add('active');
+        } else {
+            sound.audio.pause();
+            sound.btn.classList.remove('active');
+        }
+    }
+
+    sounds.rain.btn.addEventListener('click', () => toggleSound(sounds.rain));
+    sounds.fire.btn.addEventListener('click', () => toggleSound(sounds.fire));
+    sounds.forest.btn.addEventListener('click', () => toggleSound(sounds.forest));
+    sounds.cafe.btn.addEventListener("click", () => toggleSound(sounds.cafe));
+
+    // === TO-DO ===
+    const todoInput = document.getElementById("todoInput");
+    const addTodo = document.getElementById("addTodo");
+    const todoList = document.getElementById("todoList");
+    let todos = JSON.parse(localStorage.getItem("todos") || "[]");
+    
+    function renderTodos() {
+      todoList.innerHTML = todos.length
+        ? todos.map((t, i) => `
+          <li class="flex justify-between items-center bg-[#2C2F33] px-3 py-1 rounded-lg">
+            <span class="flex-1 ${t.done ? 'line-through text-gray-500' : ''}">${t.text}</span>
+            <div class="flex gap-1">
+              <button onclick="toggleDone(${i})" class="text-xs px-2 py-1 rounded bg-[#5865F2] text-white">${t.done ? 'Undo' : 'Done'}</button>
+              <button onclick="deleteTodo(${i})" class="text-xs px-2 py-1 rounded bg-red-500 text-white">Del</button>
+            </div>
+          </li>`).join("")
+        : '<li class="italic opacity-60 text-center text-xs">No tasks yet...</li>';
+      localStorage.setItem("todos", JSON.stringify(todos));
+    }
+    
+    addTodo.addEventListener("click", () => {
+      const text = todoInput.value.trim();
+      if (!text) return;
+      todos.push({ text, done: false });
+      todoInput.value = "";
+      renderTodos();
+    });
+    
+    todoInput.addEventListener("keypress", (e) => { if (e.key === "Enter") addTodo.click(); });
+    window.toggleDone = i => { todos[i].done = !todos[i].done; renderTodos(); };
+    window.deleteTodo = i => { todos.splice(i, 1); renderTodos(); };
+    
+    renderTodos();
+  </script>
+</body>
+</html>
